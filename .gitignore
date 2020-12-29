@@ -1,0 +1,7 @@
+__pycache__
+.idea
+my_spotify_data
+stream.json
+visualizations_list.txt
+spotify.py
+venv
