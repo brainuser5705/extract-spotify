@@ -45,7 +45,7 @@ def generate_data(file):
     artistData = df[df['artistName'] == artist_list[0]]
     source = ColumnDataSource(data=artistData)
     p = figure(title='Spotify Data', x_axis_type='datetime')
-    p.circle(x='endTime', y="minPlayed", source=source, width=0.2)
+    p.line(x='endTime', y="minPlayed", source=source, width=1)
 
     new_layout = column(row(file_input), row(seelct_widget), row(p)) #creates a new layout with updated values
     layout.children = new_layout.children
