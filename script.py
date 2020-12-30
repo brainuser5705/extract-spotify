@@ -2,7 +2,7 @@ from bokeh.plotting import figure, output_file, show
 import pandas as pd
 import numpy as np
 from bokeh.io import show, curdoc
-from bokeh.models import CustomJS, Select, ColumnDataSource, FileInput
+from bokeh.models import CustomJS, Select, ColumnDataSource, FileInput, Title
 from bokeh.layouts import column, row
 
 import json
@@ -44,7 +44,10 @@ def generate_data(file):
 
     artistData = df[df['artistName'] == artist_list[0]]
     source = ColumnDataSource(data=artistData)
-    p = figure(title='Spotify Data', x_axis_type='datetime')
+    p = figure(title='Spotify Data', toolbar_location="above", x_axis_type='datetime')
+    p.add_layout(Title(text="Minutes Played", align="center"), "left")
+    p.add_layout(Title(text="Date", align="center"), "below")
+
     p.line(x='endTime', y="minPlayed", source=source, width=1)
 
     new_layout = column(row(file_input), row(seelct_widget), row(p)) #creates a new layout with updated values
