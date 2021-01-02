@@ -2,7 +2,7 @@ from bokeh.plotting import figure, output_file, show
 import pandas as pd
 import numpy as np
 from bokeh.io import show, curdoc
-from bokeh.models import CustomJS, Select, ColumnDataSource, FileInput
+from bokeh.models import CustomJS, Select, ColumnDataSource, FileInput, Title
 from bokeh.layouts import column, row
 
 import json
@@ -35,7 +35,8 @@ def generate_data(file):
     df['msPlayed'] = df['msPlayed']/60000
     df = df.rename(columns={'msPlayed' : 'minPlayed'})
 
-    df['endTime'] = np.array(df['endTime'], dtype=np.datetime64).astype('M8[D]')
+    df['endTime'] = np.array(df['endTime'], dtype=np.datetime64)
+    df['endTime'] = df['endTime'].astype('M8[D]')
     df= df.groupby(['endTime', 'artistName'], as_index=False)['minPlayed'].sum()
 
     artist_list = list(pd.unique(df['artistName'])) # generates list of unique artist in df
@@ -43,8 +44,11 @@ def generate_data(file):
 
     artistData = df[df['artistName'] == artist_list[0]]
     source = ColumnDataSource(data=artistData)
-    p = figure(title='Spotify Data', x_axis_type='datetime')
-    p.circle(x='endTime', y="minPlayed", source=source, width=0.2)
+    p = figure(title='Spotify Data', toolbar_location="above", x_axis_type='datetime')
+    p.add_layout(Title(text="Minutes Played", align="center"), "left")
+    p.add_layout(Title(text="Date", align="center"), "below")
+
+    p.line(x='endTime', y="minPlayed", source=source, width=1)
 
     new_layout = column(row(file_input), row(seelct_widget), row(p)) #creates a new layout with updated values
     layout.children = new_layout.children
