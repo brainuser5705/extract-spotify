@@ -10,15 +10,15 @@ from base64 import b64encode, b64decode
 
 # initial empty display
 file_input = FileInput(accept='.json')
+
 p = figure(title='Artist X Stream Time', plot_width=1500)
 select_widget =  Select(title='Select an Artist', value="", options=[])
 p2 = figure(title='Track X Stream Time', plot_width=1500)
 track_select = Select(title='Select a Track', value="", options=[])
 
-
 # initial layout
 layout = column(row(file_input), row(select_widget), row(p), row(track_select), row(p2))
-curdoc().add_root(layout)
+
 
 
 def read_file(attrname, old, new):
