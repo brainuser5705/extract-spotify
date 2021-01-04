@@ -1,90 +1,126 @@
-from bokeh.plotting import figure, output_file, show
+"""
+Ashley Liew
+Extract Spotify main.py script
+"""
+
+from bokeh.plotting import figure
 import pandas as pd
 import numpy as np
-from bokeh.io import show, curdoc
-from bokeh.models import CustomJS, Select, ColumnDataSource, FileInput, Title
+from bokeh.io import curdoc
+from bokeh.models import Select, ColumnDataSource, FileInput, HoverTool, DataTable, TableColumn, DateFormatter
 from bokeh.layouts import column, row
-
 import json
-from base64 import b64encode, b64decode
+from base64 import b64decode
+from datetime import time
 
-# initial empty display
+# These are the intital empty widgets when the server first loads
 file_input = FileInput(accept='.json')
+artist_plot = figure(title='Artist X Stream Time', plot_width=1500)
+select_artist =  Select(title='Select an Artist', value="", options=[])
+track_plot = figure(title='Track X Stream Time', plot_width=1500)
+select_track = Select(title='Select a Track', value="", options=[])
 
-p = figure(title='Artist X Stream Time', plot_width=1500)
-select_widget =  Select(title='Select an Artist', value="", options=[])
-p2 = figure(title='Track X Stream Time', plot_width=1500)
-track_select = Select(title='Select a Track', value="", options=[])
-
-# initial layout
-layout = column(row(file_input), row(select_widget), row(p), row(track_select), row(p2))
-
+# Adds the empty widgets to the document
+layout = column(row(file_input), row(select_artist), row(artist_plot), row(select_track), row(track_plot))
+curdoc().add_root(layout)
 
 
 def read_file(attrname, old, new):
-    # decodes file into JSON string
+    """
+    Takes the file from file input and converts into a JSON string
+    """
     bs64_str = file_input.value
     json_file = json.dumps(json.loads(b64decode(bs64_str)))
     # decodes base64 string, loads into list, convert into string
-    generate_data(json_file)
+    generate_plots(json_file)
 file_input.on_change('value', read_file)
 
 
-def generate_data(file):
-    #generates plot and updates document
+def generate_plots(file):
+    """
+    Generates the plots and widgets
+    """
     data = pd.read_json(file)
 
+    # Reconfigures data 
     data['msPlayed'] = data['msPlayed']/60000
     data = data.rename(columns={'msPlayed' : 'minPlayed'})
-
-    data['endTime'] = np.array(data['endTime'], dtype=np.datetime64)
+    data['endTime'] = np.array(data['endTime'], dtype=np.datetime64) # convert to datetime object
     data['endTime'] = data['endTime'].astype('M8[D]')
     
-    #artist X stream time
-    df= data.groupby(['endTime', 'artistName'], as_index=False)['minPlayed'].sum()
+    # This is the hover tool for all stream time plots:
+    STREAMTIME_HOVER = HoverTool(
+        tooltips = [
+            ('Date', '@endTime{%F}'),
+            ('Minutes Played', '@minPlayed'),
+        ],
 
-    artist_list = list(pd.unique(df['artistName'])) # generates list of unique artist in df
-    select_widget =  Select(title='Select an Artist', value="", options=artist_list) # select widget options are updated
+        formatters = {
+            '@endTime' : 'datetime',
+        },
 
-    artistData = df[df['artistName'] == artist_list[0]]
-    source = ColumnDataSource(data=artistData)
-    p = figure(title='Artist X Stream Time', toolbar_location='above', x_axis_type='datetime', plot_width=1500)
-    p.xaxis.axis_label = 'Time'
-    p.yaxis.axis_label = 'Minutes Played'
-
-    p.vbar(x='endTime', top='minPlayed', source=source, width=0.5)
-
-    #track X stream time
-    df2 = data.groupby(['endTime', 'trackName', 'artistName'], as_index=False)['minPlayed'].sum() #weird bug: have to include artistName to show up in table
-    temp= df2[df2['artistName'] == artist_list[0]] # linked to artist graph
-
-    track_list = list(pd.unique(temp['trackName']))
-
-    track_select = Select(title="Select a Track", value='', options=track_list)
-
-    trackData = temp[temp['trackName'] == track_list[0]]
-    trackSource = ColumnDataSource(data=trackData)
-    p2 = figure(title='Track X Stream Time', toolbar_location="above", x_axis_type='datetime', plot_width=1500)
-    p2.xaxis.axis_label = 'Time'
-    p2.yaxis.axis_label = 'Minutes Played'
-
-    p2.vbar(x='endTime', top='minPlayed', source=trackSource, width=0.5)
-
+        mode='mouse'
+    )
     
+
+    """Artist and Stream Time Plot"""
+
+    artist_df= data.groupby(['endTime', 'artistName'], as_index=False)['minPlayed'].sum()
+
+    artist_list = list(pd.unique(artist_df['artistName']))
+
+    select_artist =  Select(title='Select an Artist', value=artist_list[0], options=artist_list)
+
+    selected_artist = artist_df[artist_df['artistName'] == artist_list[0]] # setting initial plot shown
+    artist_source = ColumnDataSource(data=selected_artist)
+
+    artist_plot = figure(title='Artist X Stream Time', toolbar_location='above', x_axis_type='datetime', plot_width=1500)
+    artist_plot.tools.append(STREAMTIME_HOVER)
+    artist_plot.xaxis.axis_label = 'Time'
+    artist_plot.yaxis.axis_label = 'Minutes Played'
+    artist_plot.vbar(x='endTime', top='minPlayed', source=artist_source, width=time(16,0,0))
+    
+
+    """Track and Stream Time Plot"""
+
+    track_df= data.groupby(['endTime', 'artistName', 'trackName'], as_index=False)['minPlayed'].sum()
+    artist_track_df = track_df[track_df['artistName'] == artist_list[0]] # tracks must be from selected artist, intially set to the first artist
+
+    track_list = list(pd.unique(artist_track_df['trackName']))
+
+    select_track = Select(title="Select a Track", value=track_list[0], options=track_list)
+
+    selected_track = artist_track_df[artist_track_df['trackName'] == track_list[0]]
+    track_source = ColumnDataSource(data=selected_track)
+
+    track_plot = figure(title='Track X Stream Time', toolbar_location="above", x_axis_type='datetime', plot_width=1500)
+    track_plot.tools.append(STREAMTIME_HOVER)
+    track_plot.xaxis.axis_label = 'Time'
+    track_plot.yaxis.axis_label = 'Minutes Played'
+    track_plot.vbar(x='endTime', top='minPlayed', source=track_source, width=time(16,0,0))
+
+
+    """When select widgets are updated"""
+
+    def update_track_select(attrname, old, new):
+        artist_track_df = track_df[track_df['artistName'] == select_artist.value] # linked to artist graph
+        track_list = list(pd.unique(artist_track_df['trackName']))
+        select_track.options = track_list # update options for select_track widget with new selected artist
+        select_track.value = track_list[0]
+
     def update_track_plot(attrname, old, new):
-        temp= df2[df2['artistName'] == select_widget.value] # linked to artist graph
-        track_list = list(pd.unique(temp['trackName']))
-        track_select.options = track_list # update options for track_select with new artist
-        trackData = temp[temp['trackName'] == track_select.value]
-        trackSource.data = trackData
-    track_select.on_change('value', update_track_plot)
+        artist_track_df = track_df[track_df['artistName'] == select_artist.value]
+        selected_track = artist_track_df[artist_track_df['trackName'] == select_track.value]
+        track_source.data = selected_track
+    select_track.on_change('value', update_track_plot)
 
-    def update_plot(attrname, old, new):
-        artistData = df[df['artistName'] == select_widget.value]
-        source.data = artistData # updates glyph source
-    select_widget.on_change('value', update_plot)
-    select_widget.on_change('value', update_track_plot)
+    def update_artist_plot(attrname, old, new):
+        selected_artist = artist_df[artist_df['artistName'] == select_artist.value]
+        artist_source.data = selected_artist # updates glyph artist_source
+    select_artist.on_change('value', update_artist_plot)
+    select_artist.on_change('value', update_track_select)
 
 
-    new_layout = column(row(file_input), row(select_widget), row(p), row(track_select), row(p2)) #creates a new layout with updated values
+    # Creates a new layout with updated plots and widgets
+    new_layout = column(row(file_input), row(select_artist), row(artist_plot), row(select_track), row(track_plot)) 
     layout.children = new_layout.children
