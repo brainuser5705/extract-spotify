@@ -12,9 +12,11 @@ from bokeh.layouts import column, row
 import json
 from base64 import b64decode
 from datetime import time
+from zipfile import ZipFile
+import os
 
 # These are the intital empty widgets when the server first loads
-file_input = FileInput(accept='.json')
+file_input = FileInput(accept='.json, .zip')
 artist_plot = figure(title='Artist X Stream Time', plot_width=1500)
 select_artist =  Select(title='Select an Artist', value="", options=[])
 track_plot = figure(title='Track X Stream Time', plot_width=1500)
@@ -29,10 +31,27 @@ def read_file(attrname, old, new):
     """
     Takes the file from file input and converts into a JSON string
     """
+
+    try:
+        os.remove('temp.zip')
+    except:
+        pass
+
     bs64_str = file_input.value
-    json_file = json.dumps(json.loads(b64decode(bs64_str)))
-    # decodes base64 string, loads into list, convert into string
-    generate_plots(json_file)
+    if file_input.filename.endswith('.json'):
+        json_file = json.dumps(json.loads(b64decode(bs64_str)))
+        generate_plots(json_file)
+    elif file_input.filename.endswith('.zip'):
+        zip_b64 = b64decode(bs64_str)
+        temp = ZipFile('temp.zip', 'x')
+        temp.writestr('file.zip', zip_b64)
+        with ZipFile('temp.zip') as temp_file:
+            directory = temp_file.infolist()
+            for file in directory:
+                if 'StreamingHistory0.json' in file.filename:
+                    json_file = temp_file.open(file.filename)
+        # decodes base64 string, loads into list, convert into string
+                    generate_plots(json_file)
 file_input.on_change('value', read_file)
 
 
