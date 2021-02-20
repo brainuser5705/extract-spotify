@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Extract Spotify</title>
+        <link href="script.css" rel="stylesheet" type="text/css">
+    </head>
+    <body>
+        <h1>Extract Spotify</h1>
+        <h3>version 0.1</h3>
+        <h2>built by Ashley Liew</h2>
+
+        <section>
+            <p>Extract Spotfiy allows Spotify users to view visualizations and statistics on their streaming history.</p>
+            <h3>Check it out here:</h3>
+            <a href="https://extract-spotify.herokuapp.com/app" target="_blank">Extract Spotify</a>
+            <div style="margin-top:7px;"><b>Instructions</b></div>
+            <ol>
+                <li>Download your Spotify data. In a few days/weeks, Spotify will email you a .zip file with a JSON of your streaming history (ex. StreamingHistory01.json).</li>
+                <li>Upload either the entire .zip file or JSON file into Extract Spotify (better to send JSON file).</li>
+                <li>View your visualizations!</li>
+            </ol>
+        </section>
+
+        <section>
+            <h3>Release Notes and Dev Logs</h3>
+            <a href="https://github.com/brainuser5705/extract-spotify" target="_blank">Github</a>
+            <div class="note">
+                Release v0.1 and Future Plans <b>(20210219)</b><br>
+                <ul>
+                    <li>As of now, Extract Spotify is a standalone bokeh server hosted with Heroku. Users have to download their Spotify data first, and then uploading it to the server which will display a timeline for when you listened to a particular artist or song and the corresponding stream minutes for that day. <br></li>
+                    <li>Future plans will be to use the Spotify API so users don't have to download any sensitive data and can directly log in with Spotify. It will also allow for more statistics and data to work with. </li>
+                </ul>
+                <img src="images/image1.png">
+            </div>
+        </section>
+        
+    </body>
+</html>
